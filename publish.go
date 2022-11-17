@@ -14,7 +14,7 @@ import (
 func (c *client) Publish(
 	topic string,
 	qos int,
-	message string,
+	message []byte,
 	retain bool,
 	timeout uint,
 	success func(goja.Value) (goja.Value, error),
@@ -85,7 +85,7 @@ func (c *client) Publish(
 func (c *client) publishSync(
 	topic string,
 	qos int,
-	message string,
+	message []byte,
 	retain bool,
 	timeout uint,
 ) error {
