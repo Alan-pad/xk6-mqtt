@@ -120,16 +120,19 @@ func (m *MqttAPI) client(c goja.ConstructorCall) *goja.Object {
 	}
 	if ca := c.Argument(9); ca == nil || goja.IsUndefined(ca) {
 		clientConf.ca = ""
+		clientConf.caRootPath = ""
 	} else {
 		clientConf.ca = ca.String()
 	}
 	if clientCert := c.Argument(10); clientCert == nil || goja.IsUndefined(clientCert) {
 		clientConf.clientCert = ""
+		clientConf.clientCertPath = ""
 	} else {
 		clientConf.clientCert = clientCert.String()
 	}
 	if clientKey := c.Argument(11); clientKey == nil || goja.IsUndefined(clientKey) {
 		clientConf.clientKey = ""
+		clientConf.clientCertKeyPath = ""
 	} else {
 		clientConf.clientKey = clientKey.String()
 	}
