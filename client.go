@@ -51,6 +51,12 @@ type conf struct {
 	clientCertPath string
 	// path to client cert key file
 	clientCertKeyPath string
+	// ca certificate as a string
+	ca string
+	// client certificate as a string
+	clientCert string
+	// client certificate key as a string
+	clientKey string
 }
 
 //nolint:nosnakecase // their choice not mine
@@ -112,6 +118,21 @@ func (m *MqttAPI) client(c goja.ConstructorCall) *goja.Object {
 	} else {
 		clientConf.clientCertKeyPath = clientCertKeyPathValue.String()
 	}
+	if ca := c.Argument(9); ca == nil || goja.IsUndefined(ca) {
+		clientConf.ca = ""
+	} else {
+		clientConf.ca = ca.String()
+	}
+	if clientCert := c.Argument(10); clientCert == nil || goja.IsUndefined(clientCert) {
+		clientConf.clientCert = ""
+	} else {
+		clientConf.clientCert = clientCert.String()
+	}
+	if clientKey := c.Argument(11); clientKey == nil || goja.IsUndefined(clientKey) {
+		clientConf.clientKey = ""
+	} else {
+		clientConf.clientKey = clientKey.String()
+	}
 
 	client := &client{
 		vu:      m.vu,
@@ -165,10 +186,33 @@ func (c *client) Connect() error {
 			RootCAs:    rootCA,
 			MinVersion: tls.VersionTLS12,
 		}
+	} else if len(c.conf.ca) > 0 {
+		rootCA := x509.NewCertPool()
+		loadCA := rootCA.AppendCertsFromPEM([]byte(c.conf.ca))
+		if !loadCA {
+			panic("failed to parse root certificate")
+		}
+		tlsConfig = &tls.Config{
+			RootCAs:    rootCA,
+			MinVersion: tls.VersionTLS12,
+		}
 	}
 	// Use local cert if specified
 	if len(c.conf.clientCertPath) > 0 {
 		cert, err := tls.LoadX509KeyPair(c.conf.clientCertPath, c.conf.clientCertKeyPath)
+		if err != nil {
+			panic("failed to parse client certificate")
+		}
+		if tlsConfig != nil {
+			tlsConfig.Certificates = []tls.Certificate{cert}
+		} else {
+			tlsConfig = &tls.Config{
+				Certificates: []tls.Certificate{cert},
+				MinVersion:   tls.VersionTLS12,
+			}
+		}
+	} else if len(c.conf.clientCert) > 0 && len(c.conf.clientKey) > 0 {
+		cert, err := tls.X509KeyPair([]byte(c.conf.clientCert), []byte(c.conf.clientKey))
 		if err != nil {
 			panic("failed to parse client certificate")
 		}
